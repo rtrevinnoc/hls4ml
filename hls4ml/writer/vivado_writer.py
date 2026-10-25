@@ -232,6 +232,12 @@ class VivadoWriter(Writer):
                         newline += indent + '#pragma HLS INTERFACE bram port={} \n'.format(','.join(all_brams))
                     newline += pipeline_pragma
 
+                # Emit block-level interface protocol pragma (ap_ctrl_hs is the
+                # Vivado HLS default and needs no explicit pragma).
+                iface_proto = getattr(model.config, 'interface_protocol', 'ap_ctrl_hs')
+                if iface_proto in ('ap_ctrl_none', 'ap_ctrl_chain'):
+                    newline += indent + f'#pragma HLS INTERFACE {iface_proto} port=return \n'
+
             elif '// hls-fpga-machine-learning insert layers' in line:
                 newline = line + '\n'
                 for layer in model.get_layers():

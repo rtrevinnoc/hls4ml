@@ -250,6 +250,7 @@ class VivadoBackend(FPGABackend):
         clock_period=5,
         clock_uncertainty='12.5%',
         io_type='io_parallel',
+        interface_protocol='ap_ctrl_hs',
         namespace=None,
         write_weights_txt=True,
         write_tar=False,
@@ -264,6 +265,10 @@ class VivadoBackend(FPGABackend):
             clock_uncertainty (str, optional): The clock uncertainty. Defaults to 12.5%.
             io_type (str, optional): Type of implementation used. One of
                 'io_parallel' or 'io_stream'. Defaults to 'io_parallel'.
+            interface_protocol (str, optional): Block-level interface protocol. One of
+                'ap_ctrl_hs', 'ap_ctrl_chain', or 'ap_ctrl_none'. Use 'ap_ctrl_none' for
+                fully pipelined streaming designs that auto-restart on input data.
+                Defaults to 'ap_ctrl_hs'.
             namespace (str, optional): If defined, place all generated code within a namespace. Defaults to None.
             write_weights_txt (bool, optional): If True, writes weights to .txt files which speeds up compilation.
                 Defaults to True.
@@ -287,6 +292,13 @@ class VivadoBackend(FPGABackend):
             'WriteTar': write_tar,
             'TBOutputStream': tb_output_stream,
         }
+
+        if interface_protocol is not None and interface_protocol != 'ap_ctrl_hs':
+            if 'HLSConfig' not in config:
+                config['HLSConfig'] = {}
+            if 'Model' not in config['HLSConfig']:
+                config['HLSConfig']['Model'] = {}
+            config['HLSConfig']['Model']['InterfaceProtocol'] = interface_protocol
 
         return config
 

@@ -59,6 +59,7 @@ class HLSConfig(Serializable):
 
         self.pipeline_style = 'auto'
         self.pipeline_ii = None
+        self.interface_protocol = 'ap_ctrl_hs'
 
         if 'WriterConfig' in self.config:
             self.writer_config = self.config['WriterConfig']
@@ -279,6 +280,20 @@ class HLSConfig(Serializable):
             self.model_compression = bool(model_cfg.get('Compression', 0))
             self.pipeline_style = model_cfg.get('PipelineStyle', 'auto')
             self.pipeline_ii = model_cfg.get('PipelineInterval', None)
+            iface_proto = model_cfg.get('InterfaceProtocol', 'ap_ctrl_hs')
+            if iface_proto not in ('ap_ctrl_hs', 'ap_ctrl_chain', 'ap_ctrl_none'):
+                raise ValueError(
+                    f'Invalid InterfaceProtocol "{iface_proto}". '
+                    f'Valid values: ap_ctrl_hs, ap_ctrl_chain, ap_ctrl_none.'
+                )
+            if iface_proto == 'ap_ctrl_none' and self.config.get('IOType', 'io_parallel') != 'io_stream':
+                raise ValueError(
+                    'InterfaceProtocol "ap_ctrl_none" requires IOType "io_stream". '
+                    'A free-running (no ap_start/ap_done) top function only makes sense when '
+                    'the design is a continuously-flowing AXI-Stream/DATAFLOW pipeline; '
+                    'io_parallel designs need the block-level handshake to know when outputs are valid.'
+                )
+            self.interface_protocol = iface_proto
 
         layer_type_cfg = hls_config.get('LayerType')
         if layer_type_cfg is not None:
@@ -352,6 +367,7 @@ class HLSConfig(Serializable):
         state['trace_output'] = self.trace_output
         state['pipeline_style'] = self.pipeline_style
         state['pipeline_ii'] = self.pipeline_ii
+        state['interface_protocol'] = self.interface_protocol
         state['writer_config'] = self.writer_config.copy()
         state['flows'] = self.flows.copy()
         state['optimizers'] = self.optimizers.copy() if self.optimizers is not None else None
@@ -390,6 +406,7 @@ class HLSConfig(Serializable):
         config.trace_output = state['trace_output']
         config.pipeline_style = state['pipeline_style']
         config.pipeline_ii = state['pipeline_ii']
+        config.interface_protocol = state.get('interface_protocol', 'ap_ctrl_hs')
         config.writer_config = state['writer_config']
         config.flows = state['flows']
         config.optimizers = state['optimizers']
