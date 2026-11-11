@@ -53,7 +53,10 @@ ReadInputHeight:
     ReadInputWidth:
         for (unsigned i_iw = 0; i_iw < CONFIG_T::in_width; i_iw++) {
             #pragma HLS LOOP_FLATTEN
-            #pragma HLS PIPELINE II=CONFIG_T::reuse_factor
+            // 2026-11-09 RF-rebalance campaign: pragma added in b7055463
+            // full-unrolls Resource convs (~7x LUT vs deployed baseline) --
+            // disabled to restore the ap_ctrl_hs June-22 regime.
+            // #pragma HLS PIPELINE II=CONFIG_T::reuse_factor
 
             if (CONFIG_T::filt_height > 1) {
                 compute_output_buffer_2d<data_T, res_T, CONFIG_T>(data.read(), line_buffer, res, weights, biases);
